@@ -16,6 +16,11 @@ public class PizzaBot extends CommandBot{
                 .build();
         sendMessage(message.getChatId().toString(), "Повідомлення 1", keyboard);
     }
+
+    @BotCommand("\uD83D\uDC3CPANDA PIZZA\uD83D\uDC3C")
+    public void advertisement(Message message) {
+        sendMessage(message.getChatId().toString(), "Повідомлення 2");
+    }
     //endregion
     //region<Support methods>
     private KeyboardRow createKeyboardRow(String... buttons) {

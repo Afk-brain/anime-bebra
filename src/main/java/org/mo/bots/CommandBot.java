@@ -44,6 +44,10 @@ public abstract class CommandBot extends TelegramLongPollingBot {
     }
     //endregion
     //region<Support methods>
+    protected void sendMessage(String chatId, String text) {
+        sendMessage(chatId, text, null);
+    }
+
     protected void sendMessage(String chatId, String text, ReplyKeyboard keyboard) {
         SendMessage sendMessage = SendMessage.builder()
                 .chatId(chatId)
