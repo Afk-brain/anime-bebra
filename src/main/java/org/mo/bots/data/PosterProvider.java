@@ -25,7 +25,7 @@ public class PosterProvider implements DataProvider {
             }
         }
         try {
-            URI uri = new URI("https://joinposter.com/api/" + method + "?token=" + token + params);
+            URI uri = new URI("https://joinposter.com/api/" + method + "?token=" + token + stringParams);
             HttpRequest request = HttpRequest.newBuilder(uri).GET().build();
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
             return response.body();
