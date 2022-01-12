@@ -4,11 +4,19 @@ import com.google.gson.annotations.SerializedName;
 
 public class Product {
 
-    int cost;
+    @SerializedName("product_name")
+    public String name;
+    public int cost;
     @SerializedName("menu_category_id")
-    int categoryId;
+    public int categoryId;
     String photo;
     @SerializedName("product_id")
-    int id;
+    public int id;
+    public Spot[] spots;
+
+    public int getPrice() {
+        return spots[0].price;
+    }
+
 
 }
