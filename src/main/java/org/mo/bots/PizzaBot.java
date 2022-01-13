@@ -96,6 +96,13 @@ public class PizzaBot extends CommandBot{
         return builder.build();
     }
 
+    private void showProduct(Message message, String id) {
+        Product product = provider.getProductById(id);
+        InlineKeyboardMarkup.InlineKeyboardMarkupBuilder builder = InlineKeyboardMarkup.builder();
+        builder.keyboardRow(createInlineKeyboardRow("В кошик", "-"));
+        builder.keyboardRow(createInlineKeyboardRow("<<Назад>>", "showgroup_" + product.categoryId));
+        editMessage(message.getChatId().toString(), message.getMessageId(), product.name + "\nЦіна: " + formatPrice(product.getPrice()) + "\n/\n/\n/\n/\n/\n/\n/\n/", builder.build());
+    }
 
     @Override
     void processCallbackQuery(CallbackQuery query) {
@@ -109,6 +116,9 @@ public class PizzaBot extends CommandBot{
         } else if(data.startsWith("grouppage")) {
             String[] parts = data.split("_");
             showGroup(query.getMessage(), parts[1], Integer.parseInt(parts[2]));
+        } else if(data.startsWith("showproduct_")) {
+            String id = data.split("_")[1];
+            showProduct(query.getMessage(), id);
         }
     }
     //endregion

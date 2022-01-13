@@ -9,4 +9,6 @@ public interface DataProvider {
 
     Product[] getProductsByCategory(String groupId);
 
+    Product getProductById(String id);
+
 }

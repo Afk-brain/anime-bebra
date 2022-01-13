@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import org.mo.bots.data.objects.Category;
 import org.mo.bots.data.objects.Product;
 import org.mo.bots.data.response.ResponseCategory;
+import org.mo.bots.data.response.ResponseProduct;
 import org.mo.bots.data.response.ResponseProducts;
 
 import java.net.URI;
@@ -53,6 +54,14 @@ public class PosterProvider implements DataProvider {
         params.put("category_id", groupId);
         String result = request("menu.getProducts", params);
         return gson.fromJson(result, ResponseProducts.class).response;
+    }
+
+    @Override
+    public Product getProductById(String id) {
+        Map<String, String> params = new HashMap<>();
+        params.put("product_id", id);
+        String result = request("menu.getProduct", params);
+        return gson.fromJson(result, ResponseProduct.class).response;
     }
 
     public static void main(String[] args) {
