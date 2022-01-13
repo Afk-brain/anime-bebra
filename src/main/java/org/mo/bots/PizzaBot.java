@@ -12,11 +12,14 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKe
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardButton;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 
+import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 public class PizzaBot extends CommandBot{
+
+    private static final int PAGE_SIZE = 5;
 
     private DataProvider provider;
 
@@ -43,32 +46,69 @@ public class PizzaBot extends CommandBot{
 
     @BotCommand("\uD83C\uDF55Меню")
     public void menu(Message message) {
+        sendMessage(message.getChatId().toString(), "Оберіть категорію", createMenuKeyboard());
+    }
+
+    private InlineKeyboardMarkup createMenuKeyboard() {
         Category[] categories = provider.getCategories();
         InlineKeyboardMarkup.InlineKeyboardMarkupBuilder builder = InlineKeyboardMarkup.builder();
         for(Category category : categories) {
             builder.keyboardRow(createInlineKeyboardRow(category.name, "showgroup_" + category.id));
         }
-        sendMessage(message.getChatId().toString(), "Оберіть категорію", builder.build());
+        return builder.build();
     }
 
-    private void showGroup(Message message, String groupId) {
-        Product[] products = provider.getProductsByCategory(groupId);
-        InlineKeyboardMarkup.InlineKeyboardMarkupBuilder builder = InlineKeyboardMarkup.builder();
-        for(Product product : products) {
-            builder.keyboardRow(createInlineKeyboardRow(product.name + " " + product.getPrice(), "showproduct_" + product.id));
-        }
-        builder.keyboardRow(createInlineKeyboardRow("<<Назад>>", "menu"));
-        sendMessage(message.getChatId().toString(), "Оберіть категорію", builder.build());
+    private void showGroup(Message message, String groupId, int page) {
+        editMessage(message.getChatId().toString(), message.getMessageId(), "Оберіть товар", createGroupPageKeyboard(groupId, page));
     }
+
+    private InlineKeyboardMarkup createGroupPageKeyboard(String groupId, int page) {
+        Product[] products = provider.getProductsByCategory(groupId);
+        int first = page * PAGE_SIZE;
+        int last = Math.min((page + 1) * PAGE_SIZE - 1, products.length - 1);
+        int pages = (int)Math.ceil(products.length / (float)PAGE_SIZE);
+        InlineKeyboardMarkup.InlineKeyboardMarkupBuilder builder = InlineKeyboardMarkup.builder();
+        for(int i = first;i <= last;i++) {
+            Product product = products[i];
+            String text = product.name + " " + formatPrice(product.getPrice());
+            builder.keyboardRow(createInlineKeyboardRow(text, "showproduct_" + product.id));
+        }
+        String pageData = "grouppage_" + groupId + "_";
+        List<String> pageButtons = new ArrayList<>();
+        if(page != 0) {
+            pageButtons.add("<<");
+            pageButtons.add(pageData + (page - 1));
+        } else {
+            pageButtons.add("x");
+            pageButtons.add("--");
+        }
+        pageButtons.add((page + 1) + "/" + pages);
+        pageButtons.add("-");
+        if(page < pages - 1) {
+            pageButtons.add(">>");
+            pageButtons.add(pageData + (page + 1));
+        } else {
+            pageButtons.add("x");
+            pageButtons.add("---");
+        }
+        builder.keyboardRow(createInlineKeyboardRow(listToArray(pageButtons)));
+        builder.keyboardRow(createInlineKeyboardRow("<<Назад>>", "menu"));
+        return builder.build();
+    }
+
 
     @Override
     void processCallbackQuery(CallbackQuery query) {
         String data = query.getData();
         if(data.startsWith("showgroup_")) {
             String id = data.split("_")[1];
-            showGroup(query.getMessage(), id);
+            showGroup(query.getMessage(), id, 0);
         } else if(data.equals("menu")) {
-            menu(query.getMessage());
+            Message message = query.getMessage();
+            editMessage(message.getChatId().toString(), message.getMessageId(), "Оберіть категорію", createMenuKeyboard());
+        } else if(data.startsWith("grouppage")) {
+            String[] parts = data.split("_");
+            showGroup(query.getMessage(), parts[1], Integer.parseInt(parts[2]));
         }
     }
     //endregion
@@ -88,6 +128,19 @@ public class PizzaBot extends CommandBot{
             row.add(button);
         }
         return row;
+    }
+
+    private String formatPrice(int price) {
+        NumberFormat formatter = NumberFormat.getCurrencyInstance();
+        return formatter.format(price / 100);
+    }
+
+    private String[] listToArray(List<String> list) {
+        String[] array = new String[list.size()];
+        for (int i = 0; i < list.size(); i++) {
+            array[i] = list.get(i);
+        }
+        return array;
     }
     //endregion
     //region<Settings methods>
