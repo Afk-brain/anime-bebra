@@ -1,6 +1,7 @@
 package org.mo.bots;
 
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
+import org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
@@ -77,6 +78,18 @@ public abstract class CommandBot extends TelegramLongPollingBot {
                 .replyMarkup(keyboard).build();
         try {
             execute(editMessage);
+        } catch (TelegramApiException exception) {
+            exception.printStackTrace();
+        }
+    }
+
+    protected void answerCallbackQuery(String queryId, String text, boolean alert) {
+        AnswerCallbackQuery answerQuery = AnswerCallbackQuery.builder()
+                .callbackQueryId(queryId)
+                .text(text)
+                .showAlert(alert).build();
+        try {
+            execute(answerQuery);
         } catch (TelegramApiException exception) {
             exception.printStackTrace();
         }
