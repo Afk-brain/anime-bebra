@@ -2,8 +2,12 @@ package org.mo.bots;
 
 import org.mo.bots.data.DataProvider;
 import org.mo.bots.data.PosterProvider;
+import org.mo.bots.data.cart.Cart;
+import org.mo.bots.data.cart.CartStore;
+import org.mo.bots.data.cart.RuntimeCartStore;
 import org.mo.bots.data.objects.Category;
 import org.mo.bots.data.objects.Product;
+import org.mo.bots.utils.Pair;
 import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
@@ -22,9 +26,11 @@ public class PizzaBot extends CommandBot{
     private static final int PAGE_SIZE = 5;
 
     private DataProvider provider;
+    private CartStore cartStore;
 
     public PizzaBot() {
         provider = new PosterProvider();
+        cartStore = new RuntimeCartStore();
     }
 
     //region<Main methods>
@@ -46,12 +52,19 @@ public class PizzaBot extends CommandBot{
 
     @BotCommand("\uD83D\uDCE6Кошик")
     public void cart(Message message) {
+        Cart cart = cartStore.getCart(message.getChatId().toString());
+        String text = "Кошик:\nТовари:";
         InlineKeyboardMarkup.InlineKeyboardMarkupBuilder builder = InlineKeyboardMarkup.builder();
-        builder.keyboardRow(createInlineKeyboardRow("Назва товару #кількість", "1", "+", "ww", "-", "dw"));
-        builder.keyboardRow(createInlineKeyboardRow("Назва товару #кількість", "22", "+", "w3", "-", "d4"));
+        for(Pair<String, Integer> item : cart.data) {
+            Product product = provider.getProductById(item.key);
+            text += product.name + " ";
+            builder.keyboardRow(createInlineKeyboardRow(product.name + " " + item.value, product.name));
+            builder.keyboardRow(createInlineKeyboardRow("-", "W", "+", "wdw"));
+        }
         builder.keyboardRow(createInlineKeyboardRow("Оформити замовлення", "wdw"));
-        sendMessage(message.getChatId().toString(), "Кошик\nСумма: 123.12",builder.build());
+        sendMessage(message.getChatId().toString(), text,builder.build());
     }
+
 
     @BotCommand("\uD83C\uDF55Меню")
     public void menu(Message message) {
@@ -129,8 +142,13 @@ public class PizzaBot extends CommandBot{
             String id = data.split("_")[1];
             showProduct(query.getMessage(), id);
         } else if(data.startsWith("tocart_")) {
-            String id = data.split("_")[1];
-            answerCallbackQuery(query.getId(), "Товар додано в кошик", true);
+            String[] ids = data.split("_");
+            try {
+                cartStore.addItem(query.getMessage().getChatId().toString(), ids[1]);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            answerCallbackQuery(query.getId(), "Товар додано в кошик", false);
         }
     }
     //endregion
