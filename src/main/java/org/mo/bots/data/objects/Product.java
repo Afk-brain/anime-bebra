@@ -9,7 +9,7 @@ public class Product {
     public int cost;
     @SerializedName("menu_category_id")
     public int categoryId;
-    String photo;
+    public String photo;
     @SerializedName("product_id")
     public int id;
     public Spot[] spots;
