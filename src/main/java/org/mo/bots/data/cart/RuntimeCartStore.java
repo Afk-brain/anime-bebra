@@ -13,12 +13,12 @@ public class RuntimeCartStore implements CartStore {
     }
 
     @Override
-    public void addItem(String userId, String itemId) {
+    public void addItem(String userId, String itemId, int amount) {
         Cart cart = getCart(userId);
         if(cart == null) {
             cart = new Cart();
         }
-        cart.addItem(itemId, 1);
+        cart.addItem(itemId, amount);
         data.put(userId, cart);
     }
 

@@ -124,7 +124,7 @@ public class PizzaBot extends CommandBot{
     private void showProduct(Message message, String id, int amountToShow) {
         Product product = provider.getProductById(id);
         InlineKeyboardMarkup.InlineKeyboardMarkupBuilder builder = InlineKeyboardMarkup.builder();
-        builder.keyboardRow(createInlineKeyboardRow("Додати в кошик " + formatAmount(amountToShow) + " " + formatPrice(amountToShow*product.getPrice()), "tocart_" + product.id));
+        builder.keyboardRow(createInlineKeyboardRow("Додати в кошик " + formatAmount(amountToShow) + " " + formatPrice(amountToShow*product.getPrice()), "tocart_" + product.id + "_" + amountToShow));
         builder.keyboardRow(createInlineKeyboardRow("-", "showproduct_" + product.id + "_" + (amountToShow - 1), "+", "showproduct_" + product.id + "_" + (amountToShow + 1)));
         builder.keyboardRow(createInlineKeyboardRow("<<Назад>>", "showgroup_" + product.categoryId));
         editMessageText(message.getChatId().toString(), message.getMessageId(), product.name + "\n\nЦіна: " + formatPrice(product.getPrice()) + "[⠀⠀](https://craft-tower.joinposter.com/" + product.photo + ")", builder.build(), "MarkdownV2");
@@ -150,12 +150,8 @@ public class PizzaBot extends CommandBot{
             showProduct(query.getMessage(), params[1], ammount);
         } else if(data.startsWith("tocart_")) {
             String[] ids = data.split("_");
-            try {
-                cartStore.addItem(query.getMessage().getChatId().toString(), ids[1]);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            answerCallbackQuery(query.getId(), "Товар додано в кошик", false);
+            cartStore.addItem(query.getMessage().getChatId().toString(), ids[1], Integer.parseInt(ids[2]));
+            answerCallbackQuery(query.getId(), "Товар додано в кошик " + ids[2], false);
         }
     }
     //endregion

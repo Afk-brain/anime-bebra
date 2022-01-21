@@ -4,6 +4,6 @@ public interface CartStore {
 
     Cart getCart(String id);
 
-    void addItem(String userId, String itemId);
+    void addItem(String userId, String itemId, int amount);
 
 }
