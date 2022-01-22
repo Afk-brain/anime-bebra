@@ -22,4 +22,12 @@ public class RuntimeCartStore implements CartStore {
         data.put(userId, cart);
     }
 
+    @Override
+    public void removeItem(String userId, String itemId) {
+        Cart cart = getCart(userId);
+        if(cart != null) {
+            cart.removeItem(itemId);
+        }
+    }
+
 }

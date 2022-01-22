@@ -24,6 +24,7 @@ import java.util.List;
 public class PizzaBot extends CommandBot{
 
     private static final int PAGE_SIZE = 5;
+    private static final String MENU_TEXT = "⠀⠀⠀⠀Оберіть категорію\uD83C\uDF55\uD83C\uDF70\uD83C\uDF7A\uD83C\uDF75";
 
     private DataProvider provider;
     private CartStore cartStore;
@@ -52,26 +53,34 @@ public class PizzaBot extends CommandBot{
 
     @BotCommand("\uD83D\uDCE6Кошик\uD83D\uDCE6")
     public void cart(Message message) {
+        Pair<String, InlineKeyboardMarkup> menu = creteMenu(message);
+        sendMessage(message.getChatId().toString(), menu.key, menu.value);
+    }
+
+    private Pair<String, InlineKeyboardMarkup> creteMenu(Message message) {
         Cart cart = cartStore.getCart(message.getChatId().toString());
+        if(cart.isEmpty()) {
+            return new Pair<>("Кошик порожній", null);
+        }
         String text = "Кошик\nТовари: ";
         InlineKeyboardMarkup.InlineKeyboardMarkupBuilder builder = InlineKeyboardMarkup.builder();
         int price = 0;
         for(Pair<String, Integer> item : cart.data) {
             Product product = provider.getProductById(item.key);
             text += product.name + ", ";
-            price += product.getPrice();
+            price += product.getPrice() * item.value;
             builder.keyboardRow(createInlineKeyboardRow(product.name + " " + item.value + "x" + formatPrice(product.getPrice()) + " = " + formatPrice(item.value * product.getPrice()), product.name));
-            builder.keyboardRow(createInlineKeyboardRow("-", "W", "+", "wdw"));
+            String userId = message.getChatId().toString();
+            builder.keyboardRow(createInlineKeyboardRow("-", "cartremove_" + userId + "_" + item.key, "+", "cartadd_" + userId + "_" + item.key));
         }
         text += "\nЦіна: " + formatPrice(price);
         builder.keyboardRow(createInlineKeyboardRow("Оформити замовлення", "wdw"));
-        sendMessage(message.getChatId().toString(), text,builder.build());
+        return new Pair<>(text, builder.build());
     }
-
 
     @BotCommand("\uD83C\uDF55Меню\uD83C\uDF55")
     public void menu(Message message) {
-        sendMessage(message.getChatId().toString(), "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀Оберіть категорію\uD83C\uDF55\uD83C\uDF70\uD83C\uDF7A\uD83C\uDF75⠀⠀⠀⠀", createMenuKeyboard());
+        sendMessage(message.getChatId().toString(), MENU_TEXT, createMenuKeyboard());
     }
 
     private InlineKeyboardMarkup createMenuKeyboard() {
@@ -124,7 +133,7 @@ public class PizzaBot extends CommandBot{
     private void showProduct(Message message, String id, int amountToShow) {
         Product product = provider.getProductById(id);
         InlineKeyboardMarkup.InlineKeyboardMarkupBuilder builder = InlineKeyboardMarkup.builder();
-        builder.keyboardRow(createInlineKeyboardRow("Додати в кошик " + formatAmount(amountToShow) + " " + formatPrice(amountToShow*product.getPrice()), "tocart_" + product.id + "_" + amountToShow));
+        builder.keyboardRow(createInlineKeyboardRow("Додати в кошик " + formatAmount(amountToShow) + " за " + formatPrice(amountToShow*product.getPrice()), "tocart_" + product.id + "_" + amountToShow));
         builder.keyboardRow(createInlineKeyboardRow("-", "showproduct_" + product.id + "_" + (amountToShow - 1), "+", "showproduct_" + product.id + "_" + (amountToShow + 1)));
         builder.keyboardRow(createInlineKeyboardRow("<<Назад>>", "showgroup_" + product.categoryId));
         editMessageText(message.getChatId().toString(), message.getMessageId(), product.name + "\n\nЦіна: " + formatPrice(product.getPrice()) + "[⠀⠀](https://craft-tower.joinposter.com/" + product.photo + ")", builder.build(), "MarkdownV2");
@@ -138,7 +147,7 @@ public class PizzaBot extends CommandBot{
             showGroup(query.getMessage(), id, 0);
         } else if(data.equals("menu")) {
             Message message = query.getMessage();
-            editMessageText(message.getChatId().toString(), message.getMessageId(), "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀Оберіть категорію\uD83C\uDF55\uD83C\uDF7A⠀⠀⠀⠀⠀⠀⠀⠀⠀", createMenuKeyboard());
+            editMessageText(message.getChatId().toString(), message.getMessageId(), MENU_TEXT, createMenuKeyboard());
         } else if(data.startsWith("grouppage")) {
             String[] parts = data.split("_");
             showGroup(query.getMessage(), parts[1], Integer.parseInt(parts[2]));
@@ -151,7 +160,17 @@ public class PizzaBot extends CommandBot{
         } else if(data.startsWith("tocart_")) {
             String[] ids = data.split("_");
             cartStore.addItem(query.getMessage().getChatId().toString(), ids[1], Integer.parseInt(ids[2]));
-            answerCallbackQuery(query.getId(), "Товар додано в кошик " + ids[2], false);
+            answerCallbackQuery(query.getId(), "Додано в кошик", false);
+        } else if(data.startsWith("cartremove_")) {
+            String[] info = data.split("_");
+            cartStore.removeItem(info[1], info[2]);
+            Pair<String, InlineKeyboardMarkup> menu = creteMenu(query.getMessage());
+            editMessageText(query.getMessage().getChatId().toString(), query.getMessage().getMessageId(), menu.key, menu.value);
+        } else if(data.startsWith("cartadd_")) {
+            String[] info = data.split("_");
+            cartStore.addItem(info[1], info[2], 1);
+            Pair<String, InlineKeyboardMarkup> menu = creteMenu(query.getMessage());
+            editMessageText(query.getMessage().getChatId().toString(), query.getMessage().getMessageId(), menu.key, menu.value);
         }
     }
     //endregion
@@ -167,7 +186,8 @@ public class PizzaBot extends CommandBot{
     private List<InlineKeyboardButton> createInlineKeyboardRow(String... textAndData) {
         List<InlineKeyboardButton> row = new ArrayList<>();
         for(int i = 0;i < textAndData.length;) {
-            InlineKeyboardButton button = InlineKeyboardButton.builder().text(textAndData[i++]).callbackData(textAndData[i++]).build();
+            String text = normalizeSize(textAndData[i++]);
+            InlineKeyboardButton button = InlineKeyboardButton.builder().text(text).callbackData(textAndData[i++]).build();
             row.add(button);
         }
         return row;
@@ -178,11 +198,15 @@ public class PizzaBot extends CommandBot{
         return formatter.format(price / 100);
     }
 
+    private String normalizeSize(String text) {
+        return text;
+    }
+
     private String formatAmount(int amount) {
         if(amount == 1) {
             return "1 штуку";
-        } else if(amount == 2) {
-            return "2 штуки";
+        } else if(amount >= 2 && amount <= 4) {
+            return amount + " штуки";
         } else {
             return amount + " штук";
         }

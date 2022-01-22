@@ -25,4 +25,20 @@ public class Cart {
         data.add(item);
     }
 
+    public void removeItem(String id) {
+        for(Pair<String, Integer> item : data) {
+            if(item.key.equals(id)) {
+                item.value--;
+                if(item.value == 0) {
+                    data.remove(item);
+                }
+                return;
+            }
+        }
+    }
+
+    public boolean isEmpty() {
+        return data.isEmpty();
+    }
+
 }

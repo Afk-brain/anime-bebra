@@ -6,4 +6,6 @@ public interface CartStore {
 
     void addItem(String userId, String itemId, int amount);
 
+    void removeItem(String userId, String itemId);
+
 }
