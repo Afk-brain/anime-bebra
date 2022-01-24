@@ -74,7 +74,7 @@ public class PizzaBot extends CommandBot{
             builder.keyboardRow(createInlineKeyboardRow("-", "cartremove_" + userId + "_" + item.key, "+", "cartadd_" + userId + "_" + item.key));
         }
         text += "\nЦіна: " + formatPrice(price);
-        builder.keyboardRow(createInlineKeyboardRow("Оформити замовлення", "wdw"));
+        builder.keyboardRow(createInlineKeyboardRow("Оформити замовлення", "finish"));
         return new Pair<>(text, builder.build());
     }
 
@@ -171,8 +171,13 @@ public class PizzaBot extends CommandBot{
             cartStore.addItem(info[1], info[2], 1);
             Pair<String, InlineKeyboardMarkup> menu = creteMenu(query.getMessage());
             editMessageText(query.getMessage().getChatId().toString(), query.getMessage().getMessageId(), menu.key, menu.value);
+        } else if (data.equals("finish")) {
+
         }
     }
+    //endregion
+    //region<Finish methods>
+
     //endregion
     //region<Support methods>
     private KeyboardRow createKeyboardRow(String... buttons) {
