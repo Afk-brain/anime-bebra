@@ -8,4 +8,8 @@ public interface SessionStore {
 
     void save(String userId, Map<String, Object> data);
 
+    void putValue(String userId, String key, Object value);
+
+    Object getValue(String userId, String key);
+
 }

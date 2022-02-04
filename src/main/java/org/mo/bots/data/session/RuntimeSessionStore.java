@@ -9,11 +9,28 @@ public class RuntimeSessionStore implements SessionStore {
 
     @Override
     public Map<String, Object> get(String userId) {
-        return store.get(userId);
+        Map<String, Object> session = store.get(userId);
+        if(session == null) {
+            session = new HashMap<>();
+        }
+        return session;
     }
 
     @Override
     public void save(String userId, Map<String, Object> data) {
         store.put(userId, data);
+    }
+
+    @Override
+    public void putValue(String userId, String key, Object value) {
+        Map<String, Object> session = get(userId);
+        session.put(key, value);
+        save(userId, session);
+    }
+
+    @Override
+    public Object getValue(String userId, String key) {
+        Map<String, Object> session = get(userId);
+        return session.get(key);
     }
 }

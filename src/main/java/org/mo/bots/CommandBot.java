@@ -7,6 +7,7 @@ import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageMedia;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
+import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.media.InputMediaPhoto;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
@@ -38,21 +39,24 @@ public abstract class CommandBot extends TelegramLongPollingBot {
     public void onUpdateReceived(Update update) {
         if (update.hasMessage() && update.getMessage().hasText()) {
             String input = update.getMessage().getText();
-            methods.forEach((string, method) -> {
-                if (input.equals(string)) {
+            for(Map.Entry<String, Method> method : methods.entrySet()) {
+                if (input.equals(method.getKey())) {
                     try {
-                        method.invoke(this, update.getMessage());
+                        method.getValue().invoke(this, update.getMessage());
+                        return;
                     } catch (Exception exception) {
                         exception.printStackTrace();
                     }
                 }
-            });
+            }
+            processPlainText(update.getMessage());
         } else if (update.hasCallbackQuery()) {
             processCallbackQuery(update.getCallbackQuery());
         }
     }
     //endregion
     //region<Action methods>
+    abstract void processPlainText(Message message);
     abstract void processCallbackQuery(CallbackQuery query);
     //endregion
     //region<Support methods>

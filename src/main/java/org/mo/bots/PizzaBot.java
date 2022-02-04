@@ -7,6 +7,8 @@ import org.mo.bots.data.cart.CartStore;
 import org.mo.bots.data.cart.RuntimeCartStore;
 import org.mo.bots.data.objects.Category;
 import org.mo.bots.data.objects.Product;
+import org.mo.bots.data.session.RuntimeSessionStore;
+import org.mo.bots.data.session.SessionStore;
 import org.mo.bots.utils.Pair;
 import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.Message;
@@ -20,6 +22,7 @@ import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 public class PizzaBot extends CommandBot{
 
@@ -28,10 +31,12 @@ public class PizzaBot extends CommandBot{
 
     private DataProvider provider;
     private CartStore cartStore;
+    private SessionStore sessionStore;
 
     public PizzaBot() {
         provider = new PosterProvider();
         cartStore = new RuntimeCartStore();
+        sessionStore = new RuntimeSessionStore();
     }
 
     //region<Main methods>
@@ -172,12 +177,28 @@ public class PizzaBot extends CommandBot{
             Pair<String, InlineKeyboardMarkup> menu = creteMenu(query.getMessage());
             editMessageText(query.getMessage().getChatId().toString(), query.getMessage().getMessageId(), menu.key, menu.value);
         } else if (data.equals("finish")) {
-
+            sessionStore.putValue(query.getMessage().getChatId().toString(), "status", "address");
+            sendMessage(query.getMessage().getChatId().toString(), "Введіть адресу");
         }
     }
     //endregion
     //region<Finish methods>
-
+    @Override
+    public void processPlainText(Message message) {
+        String id = message.getChatId().toString();
+        String status = (String)sessionStore.getValue(id, "status");
+        System.out.println("Status: " + status);
+        String text = message.getText();
+        if(status.equals("address")) {
+            sessionStore.putValue(id, "address", text);
+            sessionStore.putValue(id, "status", "phone");
+            sendMessage(id, "Введіть телефон");
+        } else if(status.equals("phone")) {
+            sessionStore.putValue(id, "address", text);
+            sessionStore.putValue(id, "status", "phone");
+            sendMessage(id, "Введіть телефон");
+        }
+    }
     //endregion
     //region<Support methods>
     private KeyboardRow createKeyboardRow(String... buttons) {
