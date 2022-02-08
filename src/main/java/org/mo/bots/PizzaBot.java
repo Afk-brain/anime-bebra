@@ -10,8 +10,11 @@ import org.mo.bots.data.objects.Product;
 import org.mo.bots.data.session.RuntimeSessionStore;
 import org.mo.bots.data.session.SessionStore;
 import org.mo.bots.utils.Pair;
+import org.telegram.telegrambots.meta.api.methods.send.SendInvoice;
 import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
+import org.telegram.telegrambots.meta.api.objects.Contact;
 import org.telegram.telegrambots.meta.api.objects.Message;
+import org.telegram.telegrambots.meta.api.objects.payments.LabeledPrice;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
@@ -177,8 +180,12 @@ public class PizzaBot extends CommandBot{
             Pair<String, InlineKeyboardMarkup> menu = creteMenu(query.getMessage());
             editMessageText(query.getMessage().getChatId().toString(), query.getMessage().getMessageId(), menu.key, menu.value);
         } else if (data.equals("finish")) {
-            sessionStore.putValue(query.getMessage().getChatId().toString(), "status", "address");
-            sendMessage(query.getMessage().getChatId().toString(), "Введіть адресу");
+            KeyboardRow row = new KeyboardRow();
+            KeyboardButton button = KeyboardButton.builder().text("Мій номер телефону").requestContact(true).build();
+            row.add(button);
+            ReplyKeyboardMarkup keyboard = ReplyKeyboardMarkup.builder().resizeKeyboard(true).keyboardRow(row).build();
+            sessionStore.putValue(query.getMessage().getChatId().toString(), "status", "phone_sent");
+            sendMessage(query.getMessage().getChatId().toString(), "Введіть номер телефону, або натисніть кнопку нижче",keyboard);
         }
     }
     //endregion
@@ -189,14 +196,61 @@ public class PizzaBot extends CommandBot{
         String status = (String)sessionStore.getValue(id, "status");
         System.out.println("Status: " + status);
         String text = message.getText();
-        if(status.equals("address")) {
-            sessionStore.putValue(id, "address", text);
-            sessionStore.putValue(id, "status", "phone");
-            sendMessage(id, "Введіть телефон");
-        } else if(status.equals("phone")) {
-            sessionStore.putValue(id, "address", text);
-            sessionStore.putValue(id, "status", "phone");
-            sendMessage(id, "Введіть телефон");
+        if(status.equals("order_type_sent")) {
+            if(text.equals("Самовивіз")) {
+                sendMessage(message.getChatId().toString(), "Дякуємо за замовлення!!!\nОчікуйте дзвінка від менеджера для підтвердження замовлення.");
+            } else if(text.equals("Доставка")) {
+                sessionStore.putValue(message.getChatId().toString(), "status", "address_sent");
+                sendMessage(message.getChatId().toString(), "Вкажіть адресу доставки");
+            }
+        } else if(status.equals("address_sent")) {
+            System.out.println(text);
+            sessionStore.putValue(id, "status", "pay_type_sent");
+            ReplyKeyboardMarkup keyboard = ReplyKeyboardMarkup.builder().resizeKeyboard(true)
+                    .keyboardRow(createKeyboardRow("Готівка", "Карта")).build();
+            sendMessage(id, "Вкажіть тип оплати", keyboard);
+        } else if(status.equals("pay_type_sent")) {
+            if(text.equals("Готівка")) {
+                sendMessage(message.getChatId().toString(), "Дякуємо за замовлення!!!\nОчікуйте дзвінка від менеджера для підтвердження замовлення.");
+            } else if(text.equals("Карта")) {
+                try {
+                LabeledPrice price = LabeledPrice.builder()
+                        .label("Позиція").amount(20000).build();
+                SendInvoice sendInvoice = SendInvoice.builder()
+                        .chatId(message.getChatId().toString())
+                        .title("Замовлення №")
+                        .description("Опис замовлення")
+                        .providerToken("284685063:TEST:NDIwYTM4N2UyOGJh")
+                        .currency("UAH")
+                        .price(price)
+                        .photoUrl("https://e0.edimdoma.ru/data/posts/0002/1429/21429-ed4_wide.jpg?1628275808")
+                        .needName(true)
+                        .needPhoneNumber(true)
+                        .needShippingAddress(true)
+                        .payload("2")
+                        .startParameter("").build();
+
+                    System.out.println("Аніме");
+                    execute(sendInvoice);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    @Override
+    public void processContact(Message message) {
+        String id = message.getChatId().toString();
+        String status = (String)sessionStore.getValue(id, "status");
+        System.out.println("Status: " + status);
+        if(status.equals("phone_sent")) {
+            String phone = message.getContact().getPhoneNumber();
+            System.out.println("Телефон: " + phone);
+            sessionStore.putValue(id, "status", "order_type_sent");
+            ReplyKeyboardMarkup keyboard = ReplyKeyboardMarkup.builder().resizeKeyboard(true)
+                    .keyboardRow(createKeyboardRow("Доставка", "Самовивіз")).build();
+            sendMessage(id, "Вкажіть тип доставки", keyboard);
         }
     }
     //endregion

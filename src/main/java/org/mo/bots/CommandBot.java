@@ -7,6 +7,7 @@ import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageMedia;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
+import org.telegram.telegrambots.meta.api.objects.Contact;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.media.InputMediaPhoto;
@@ -52,12 +53,15 @@ public abstract class CommandBot extends TelegramLongPollingBot {
             processPlainText(update.getMessage());
         } else if (update.hasCallbackQuery()) {
             processCallbackQuery(update.getCallbackQuery());
+        } else if(update.hasMessage() &&  update.getMessage().hasContact()) {
+            processContact(update.getMessage());
         }
     }
     //endregion
     //region<Action methods>
     abstract void processPlainText(Message message);
     abstract void processCallbackQuery(CallbackQuery query);
+    abstract void processContact(Message message);
     //endregion
     //region<Support methods>
     protected void sendMessage(String chatId, String text) {
