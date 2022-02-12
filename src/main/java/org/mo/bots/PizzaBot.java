@@ -1,5 +1,6 @@
 package org.mo.bots;
 
+import org.checkerframework.checker.units.qual.A;
 import org.mo.bots.data.DataProvider;
 import org.mo.bots.data.PosterProvider;
 import org.mo.bots.data.cart.Cart;
@@ -10,11 +11,13 @@ import org.mo.bots.data.objects.Product;
 import org.mo.bots.data.session.RuntimeSessionStore;
 import org.mo.bots.data.session.SessionStore;
 import org.mo.bots.utils.Pair;
+import org.telegram.telegrambots.meta.api.methods.AnswerPreCheckoutQuery;
 import org.telegram.telegrambots.meta.api.methods.send.SendInvoice;
 import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.Contact;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.payments.LabeledPrice;
+import org.telegram.telegrambots.meta.api.objects.payments.PreCheckoutQuery;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
@@ -220,10 +223,10 @@ public class PizzaBot extends CommandBot{
                         .chatId(message.getChatId().toString())
                         .title("Замовлення №")
                         .description("Опис замовлення")
-                        .providerToken("284685063:TEST:NDIwYTM4N2UyOGJh")
+                        .providerToken("284685063:TEST:MDI5ZWU1ODYwNTMz")
                         .currency("UAH")
                         .price(price)
-                        .photoUrl("https://e0.edimdoma.ru/data/posts/0002/1429/21429-ed4_wide.jpg?1628275808")
+                        .photoUrl("https://i.ibb.co/yn8q8rk/photo-2022-02-12-18-52-38.jpg")
                         .needName(true)
                         .needPhoneNumber(true)
                         .needShippingAddress(true)
@@ -253,6 +256,23 @@ public class PizzaBot extends CommandBot{
             sendMessage(id, "Вкажіть тип доставки", keyboard);
         }
     }
+
+    @Override
+    void processPreCheckoutQuery(PreCheckoutQuery query) {
+        AnswerPreCheckoutQuery answerPreCheckoutQuery = AnswerPreCheckoutQuery
+                .builder().preCheckoutQueryId(query.getId()).ok(true).build();
+        try {
+             execute(answerPreCheckoutQuery);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    void processSuccessfulPayment(Message message) {
+        sendMessage(message.getChatId().toString(), "Дякуємо за замовлення!!!\nОчікуйте дзвінка від менеджера для підтвердження замовлення.");
+    }
+
     //endregion
     //region<Support methods>
     private KeyboardRow createKeyboardRow(String... buttons) {

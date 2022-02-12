@@ -11,6 +11,7 @@ import org.telegram.telegrambots.meta.api.objects.Contact;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.media.InputMediaPhoto;
+import org.telegram.telegrambots.meta.api.objects.payments.PreCheckoutQuery;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboard;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
@@ -55,6 +56,10 @@ public abstract class CommandBot extends TelegramLongPollingBot {
             processCallbackQuery(update.getCallbackQuery());
         } else if(update.hasMessage() &&  update.getMessage().hasContact()) {
             processContact(update.getMessage());
+        } else if(update.hasPreCheckoutQuery()) {
+            processPreCheckoutQuery(update.getPreCheckoutQuery());
+        } else if(update.hasMessage() && update.getMessage().hasSuccessfulPayment()) {
+            processSuccessfulPayment(update.getMessage());
         }
     }
     //endregion
@@ -62,6 +67,8 @@ public abstract class CommandBot extends TelegramLongPollingBot {
     abstract void processPlainText(Message message);
     abstract void processCallbackQuery(CallbackQuery query);
     abstract void processContact(Message message);
+    abstract void processSuccessfulPayment(Message message);
+    abstract void processPreCheckoutQuery(PreCheckoutQuery query);
     //endregion
     //region<Support methods>
     protected void sendMessage(String chatId, String text) {
