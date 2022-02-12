@@ -97,6 +97,18 @@ public abstract class CommandBot extends TelegramLongPollingBot {
         DeleteMessage deleteMessage = DeleteMessage.builder().chatId(chatId).messageId(messageId).build();
     }
 
+    protected void editMessageKeyboard(String chatId, Integer messageId, InlineKeyboardMarkup keyboard) {
+        EditMessageText editMessage = EditMessageText.builder()
+                .chatId(chatId)
+                .messageId(messageId)
+                .replyMarkup(keyboard).build();
+        try {
+            execute(editMessage);
+        } catch (TelegramApiException exception) {
+            exception.printStackTrace();
+        }
+    }
+
     protected void editMessageText(String chatId, Integer messageId, String text, InlineKeyboardMarkup keyboard) {
         editMessageText(chatId, messageId, text, keyboard, null);
     }

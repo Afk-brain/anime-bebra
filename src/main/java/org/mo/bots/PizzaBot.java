@@ -10,6 +10,7 @@ import org.mo.bots.data.objects.Category;
 import org.mo.bots.data.objects.Product;
 import org.mo.bots.data.session.RuntimeSessionStore;
 import org.mo.bots.data.session.SessionStore;
+import org.mo.bots.utils.Keyboards;
 import org.mo.bots.utils.Pair;
 import org.telegram.telegrambots.meta.api.methods.AnswerPreCheckoutQuery;
 import org.telegram.telegrambots.meta.api.methods.send.SendInvoice;
@@ -20,6 +21,7 @@ import org.telegram.telegrambots.meta.api.objects.payments.LabeledPrice;
 import org.telegram.telegrambots.meta.api.objects.payments.PreCheckoutQuery;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardRemove;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardButton;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
@@ -48,13 +50,7 @@ public class PizzaBot extends CommandBot{
     //region<Main methods>
     @BotCommand("/start")
     public void start(Message message) {
-        ReplyKeyboardMarkup keyboard = ReplyKeyboardMarkup.builder()
-                .resizeKeyboard(true)
-                .keyboardRow(createKeyboardRow("\uD83D\uDC3CPANDA PIZZA\uD83D\uDC3C"))
-                .keyboardRow(createKeyboardRow("\uD83C\uDF55Меню\uD83C\uDF55", "\uD83D\uDC3EАкції\uD83D\uDC3E"))
-                .keyboardRow(createKeyboardRow("\uD83D\uDCE6Кошик\uD83D\uDCE6"))
-                .build();
-        sendMessage(message.getChatId().toString(), "Повідомлення 1", keyboard);
+        sendMessage(message.getChatId().toString(), "Повідомлення 1", Keyboards.MAIN);
     }
 
     @BotCommand("\uD83D\uDC3CPANDA PIZZA\uD83D\uDC3C")
@@ -201,25 +197,23 @@ public class PizzaBot extends CommandBot{
         String text = message.getText();
         if(status.equals("order_type_sent")) {
             if(text.equals("Самовивіз")) {
-                sendMessage(message.getChatId().toString(), "Дякуємо за замовлення!!!\nОчікуйте дзвінка від менеджера для підтвердження замовлення.");
+                sendFinalMessage(message);
             } else if(text.equals("Доставка")) {
                 sessionStore.putValue(message.getChatId().toString(), "status", "address_sent");
-                sendMessage(message.getChatId().toString(), "Вкажіть адресу доставки");
+                sendMessage(message.getChatId().toString(), "Вкажіть адресу доставки", Keyboards.MAIN);
             }
         } else if(status.equals("address_sent")) {
             System.out.println(text);
             sessionStore.putValue(id, "status", "pay_type_sent");
-            ReplyKeyboardMarkup keyboard = ReplyKeyboardMarkup.builder().resizeKeyboard(true)
-                    .keyboardRow(createKeyboardRow("Готівка", "Карта")).build();
-            sendMessage(id, "Вкажіть тип оплати", keyboard);
+            sendMessage(id, "Вкажіть тип оплати", Keyboards.PAY);
         } else if(status.equals("pay_type_sent")) {
             if(text.equals("Готівка")) {
-                sendMessage(message.getChatId().toString(), "Дякуємо за замовлення!!!\nОчікуйте дзвінка від менеджера для підтвердження замовлення.");
+                sendFinalMessage(message);
             } else if(text.equals("Карта")) {
                 try {
-                LabeledPrice price = LabeledPrice.builder()
+                    LabeledPrice price = LabeledPrice.builder()
                         .label("Позиція").amount(20000).build();
-                SendInvoice sendInvoice = SendInvoice.builder()
+                    SendInvoice sendInvoice = SendInvoice.builder()
                         .chatId(message.getChatId().toString())
                         .title("Замовлення №")
                         .description("Опис замовлення")
@@ -227,9 +221,6 @@ public class PizzaBot extends CommandBot{
                         .currency("UAH")
                         .price(price)
                         .photoUrl("https://i.ibb.co/yn8q8rk/photo-2022-02-12-18-52-38.jpg")
-                        .needName(true)
-                        .needPhoneNumber(true)
-                        .needShippingAddress(true)
                         .payload("2")
                         .startParameter("").build();
 
@@ -242,6 +233,10 @@ public class PizzaBot extends CommandBot{
         }
     }
 
+    private void sendFinalMessage(Message message) {
+        sendMessage(message.getChatId().toString(), "Дякуємо за замовлення!!!\nОчікуйте дзвінка від менеджера для підтвердження замовлення.", Keyboards.MAIN);
+    }
+
     @Override
     public void processContact(Message message) {
         String id = message.getChatId().toString();
@@ -251,9 +246,7 @@ public class PizzaBot extends CommandBot{
             String phone = message.getContact().getPhoneNumber();
             System.out.println("Телефон: " + phone);
             sessionStore.putValue(id, "status", "order_type_sent");
-            ReplyKeyboardMarkup keyboard = ReplyKeyboardMarkup.builder().resizeKeyboard(true)
-                    .keyboardRow(createKeyboardRow("Доставка", "Самовивіз")).build();
-            sendMessage(id, "Вкажіть тип доставки", keyboard);
+            sendMessage(id, "Вкажіть тип доставки", Keyboards.DELIVERY);
         }
     }
 
@@ -270,19 +263,11 @@ public class PizzaBot extends CommandBot{
 
     @Override
     void processSuccessfulPayment(Message message) {
-        sendMessage(message.getChatId().toString(), "Дякуємо за замовлення!!!\nОчікуйте дзвінка від менеджера для підтвердження замовлення.");
+        sendFinalMessage(message);
     }
 
     //endregion
     //region<Support methods>
-    private KeyboardRow createKeyboardRow(String... buttons) {
-        KeyboardRow row = new KeyboardRow();
-        for(String button : buttons) {
-            row.add(button);
-        }
-        return row;
-    }
-
     private List<InlineKeyboardButton> createInlineKeyboardRow(String... textAndData) {
         List<InlineKeyboardButton> row = new ArrayList<>();
         for(int i = 0;i < textAndData.length;) {
