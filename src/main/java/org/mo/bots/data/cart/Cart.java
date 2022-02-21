@@ -38,7 +38,7 @@ public class Cart {
     }
 
     public boolean isEmpty() {
-        return data.isEmpty();
+        return data.size() == 0;
     }
 
 }

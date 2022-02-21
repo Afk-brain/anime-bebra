@@ -2,6 +2,7 @@ package org.mo.bots.data;
 
 import com.google.gson.Gson;
 import org.mo.bots.data.objects.Category;
+import org.mo.bots.data.objects.Order;
 import org.mo.bots.data.objects.Product;
 import org.mo.bots.data.response.ResponseCategory;
 import org.mo.bots.data.response.ResponseProduct;
@@ -38,6 +39,19 @@ public class PosterProvider implements DataProvider {
         }
         return null;
     }
+
+    public void createOrder(Order order) {
+        try {
+            String body = new Gson().toJson(order);
+            System.out.println(body);
+            URI uri = new URI("https://joinposter.com/api/incomingOrders.createIncomingOrder?token=" + token);
+            HttpRequest request = HttpRequest.newBuilder(uri).POST(HttpRequest.BodyPublishers.ofString("spot_id 1")).build();
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            System.out.println(response.body());
+        } catch (Exception exception) {
+            exception.printStackTrace();
+        }
+    }
     //endregion
 
     Gson gson = new Gson();
@@ -66,10 +80,7 @@ public class PosterProvider implements DataProvider {
 
     public static void main(String[] args) {
         PosterProvider provider = new PosterProvider();
-        Product[] categories = provider.getProductsByCategory("1");
-        for(Product category : categories) {
-            System.out.println(category.name + " " + category.categoryId + " " + category.spots[0].price + " " + category.id);
-        }
+        provider.createOrder(new Order());
     }
 
 }

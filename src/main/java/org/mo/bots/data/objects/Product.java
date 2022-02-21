@@ -13,10 +13,15 @@ public class Product {
     @SerializedName("product_id")
     public int id;
     public Spot[] spots;
+    public Ingredient[] ingredients;
 
     public int getPrice() {
         return spots[0].price;
     }
 
+    static public class Ingredient {
+        @SerializedName("ingredient_name")
+        public String name;
+    }
 
 }
